@@ -1,0 +1,149 @@
+package waldonsm.paint.gui;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.JPanel;
+
+import waldonsm.paint.gui.events.NewModelEvent;
+import waldonsm.paint.gui.listeners.NewModelListener;
+import waldonsm.paint.gui.listeners.PaintListener;
+import waldonsm.paint.model.PaintModel;
+
+/**
+ * The class to implement the GUI of a color palate which is used to change the colors used to draw.
+ * @author Shawn Waldon
+ *
+ */
+public final class ColorChangePanel extends JPanel implements NewModelListener {
+
+	/**
+	 * to shut up the warnings
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	private static final int HEIGHT = 41;
+	private static final int WIDTH = 181;
+	
+	private static final int BOX_SIZE = 20;
+	private static final int FIRST_BOX_X = 40;
+	private static final int MAIN_COLOR_X = 4;
+	private static final int MAIN_COLOR_Y = 4;
+	private static final int SECOND_COLOR_X = 16;
+	private static final int SECOND_COLOR_Y = 16;
+	
+	private PaintModel model;
+	
+	private Color primaryColor = Color.black;
+	private Color secondaryColor = Color.white;
+
+	/**
+	 * TODO: Possibly make a data structure that will hold variable numbers of colors.
+	 */
+	private final Color[][] colors = new Color[2][7];
+	
+	/**
+	 * Creates a new ColorChangePanel that will affect the current model of the given frame
+	 * @param frame
+	 */
+	public ColorChangePanel(PaintFrame frame) {
+		model = null;
+		frame.addNewModelListener(this);
+		setSize(WIDTH, HEIGHT);
+		setPreferredSize(new Dimension(WIDTH, HEIGHT));
+		initColors();
+		addMouseListener(new ColorChanger());
+	}
+	
+	/**
+	 * Sets up the colors array with the default colors
+	 */
+	private void initColors() {
+		colors[0][0] = Color.BLACK;
+		colors[0][1] = Color.DARK_GRAY;
+		colors[0][2] = Color.BLUE;
+		colors[0][3] = Color.GREEN;
+		colors[0][4] = Color.YELLOW;
+		colors[0][5] = Color.ORANGE;
+		colors[0][6] = Color.RED;
+		colors[1][0] = Color.WHITE;
+		colors[1][1] = Color.LIGHT_GRAY;
+		colors[1][2] = Color.CYAN;
+		colors[1][3] = Color.MAGENTA;
+		colors[1][4] = Color.PINK;
+		colors[1][5] = Color.GRAY;
+		colors[1][6] = new Color(66,0,99);
+	}
+	
+	/**
+	 * Changes which PaintModel that this ChangeColorPanel updates and sets the model's colors to the current Colors shown on the panel
+	 */
+	public void newModel(NewModelEvent nme) {
+		model = nme.getNewModel();
+		if (model != null) {
+			model.setMainColor(primaryColor);
+			model.setSecondaryColor(secondaryColor);
+		}
+	}
+	
+	/**
+	 * Provides the instructions needed to paint this part of the GUI
+	 */
+	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		Graphics2D g2 = (Graphics2D) g;
+		// Draw the boxes showing current colors off to the left
+		g2.setColor(secondaryColor);
+		g2.fillRect(SECOND_COLOR_X, SECOND_COLOR_Y, BOX_SIZE, BOX_SIZE);
+		g2.setColor(Color.black);
+		g2.drawRect(SECOND_COLOR_X, SECOND_COLOR_Y, BOX_SIZE, BOX_SIZE);
+		g2.setColor(primaryColor);
+		g2.fillRect(MAIN_COLOR_X, MAIN_COLOR_Y, BOX_SIZE, BOX_SIZE);
+		g2.setColor(Color.black);
+		g2.drawRect(MAIN_COLOR_X, MAIN_COLOR_Y, BOX_SIZE, BOX_SIZE);
+		
+		// Draw the boxes for the palate on the right
+		for (int i = 0; i < colors.length; i++) {
+			for (int j = 0; j < colors[i].length; j++) {
+				g2.setColor(colors[i][j]);
+				g2.fillRect(FIRST_BOX_X+BOX_SIZE*j, BOX_SIZE*i, BOX_SIZE, BOX_SIZE);
+				g2.setColor(Color.black);
+				g2.drawRect(FIRST_BOX_X+BOX_SIZE*j, BOX_SIZE*i, BOX_SIZE, BOX_SIZE);
+			}
+		}
+	}
+
+	/**
+	 * A listener that takes mouse clicks and changes the colors accordingly
+	 * @author Shawn Waldon
+	 *
+	 */
+	private class ColorChanger extends MouseAdapter {
+		/**
+		 * If the mouse was clicked in the appropriate area for selecting colors, then this method changes the colors accordingly.
+		 */
+		public void mouseClicked(MouseEvent me) {
+			Point p = new Point(me.getPoint());
+			int x = p.x, y = p.y;
+			if (x >= 40) { // If the user clicked a point on the color selection part of the panel.
+				x -= 40;
+				Color selection = colors[y/20][x/20];
+				if (me.getButton() == PaintListener.RIGHT_MOUSE_BUTTON) {
+					secondaryColor = selection;
+					if (model != null)
+						model.setSecondaryColor(selection);
+				} else {
+					primaryColor = selection;
+					if (model != null)
+						model.setMainColor(selection);
+				}
+				repaint();
+			}
+		}
+	}
+}
